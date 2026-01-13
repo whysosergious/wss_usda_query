@@ -86,6 +86,7 @@ class SearchComponent extends HTMLElement {
   }
 
   onKeyDown(e) {
+    console.log("Keydown event:", e.key, "selectedIndex:", this.selectedIndex);
     const items = Array.from(this.dropdownContent.children);
     if (items.length === 0) return;
 
@@ -109,6 +110,7 @@ class SearchComponent extends HTMLElement {
   }
 
   _highlightSelectedItem(items) {
+    console.log("Highlighting item:", this.selectedIndex);
     items.forEach((item, index) => {
       if (index === this.selectedIndex) {
         item.style.backgroundColor = "#e9ecef"; // Highlight color
@@ -184,6 +186,7 @@ class SearchComponent extends HTMLElement {
 
     if (results && results.length) {
       this.dropdownContent.style.display = "block";
+      console.log("Dropdown displayed with", results.length, "items.");
       this._calculateDropdownHeight(); // Recalculate height when content changes
       results.forEach((result) => {
         const a = document.createElement("a");
@@ -197,6 +200,7 @@ class SearchComponent extends HTMLElement {
         `;
         a.addEventListener("click", (e) => {
           e.preventDefault();
+          console.log("Dispatching item-selected event for:", result.description);
           this.dispatchEvent(
             new CustomEvent("item-selected", { detail: result }),
           );
@@ -295,6 +299,7 @@ class ListComponent extends HTMLElement {
   }
 
   addItem(item) {
+    console.log("Adding item to list:", item.description);
     this.items.push(item);
     const energy =
       item.foodNutrients.find((n) => n.nutrientId === 1008)?.value || 0;
@@ -520,6 +525,7 @@ saveApiKeyButton.addEventListener('click', () => {
 
 
 searchComponent.addEventListener("item-selected", (e) => {
+  console.log("item-selected event received in main.js for:", e.detail.description);
   listComponent.addItem(e.detail);
 });
 
