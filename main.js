@@ -30,7 +30,7 @@ class SearchComponent extends HTMLElement {
                     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
                     z-index: 1;
                     border-radius: 4px;
-                    overflow: hidden;
+                    /* overflow: hidden; */ /* This was the conflicting property */
                     margin-top: 0.5rem;
                 }
                 .dropdown-content a {
@@ -137,7 +137,10 @@ class SearchComponent extends HTMLElement {
         a.href = "#";
         a.innerHTML = `
           ${result.description}
-          <span class="details">Type: ${result.dataType || 'N/A'} - FDC ID: ${result.fdcId}</span>
+          <span class="details">
+            ${result.brandOwner ? `Brand: ${result.brandOwner}` : ''}
+            ${result.foodCategory ? `Category: ${result.foodCategory}` : ''}
+          </span>
         `;
         a.addEventListener("click", (e) => {
           e.preventDefault();
