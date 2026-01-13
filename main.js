@@ -130,9 +130,9 @@ class SearchComponent extends HTMLElement {
 
   onBlur() {
     // Delay hiding to allow click events on dropdown items to register
-    setTimeout(() => {
-      this.dropdownContent.style.display = "none";
-    }, 100);
+    // setTimeout(() => {
+    //   this.dropdownContent.style.display = "none";
+    // }, 100);
   }
 
   _calculateDropdownHeight() {
