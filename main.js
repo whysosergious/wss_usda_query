@@ -82,7 +82,10 @@ class SearchComponent extends HTMLElement {
     this.input.removeEventListener("keydown", this.onKeyDown.bind(this)); // Remove keydown listener
     this.input.removeEventListener("focus", this.onFocus.bind(this));
     this.input.removeEventListener("blur", this.onBlur.bind(this));
-    window.removeEventListener("resize", this._calculateDropdownHeight.bind(this));
+    window.removeEventListener(
+      "resize",
+      this._calculateDropdownHeight.bind(this),
+    );
   }
 
   onKeyDown(e) {
@@ -96,7 +99,8 @@ class SearchComponent extends HTMLElement {
       this._highlightSelectedItem(items);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      this.selectedIndex = (this.selectedIndex - 1 + items.length) % items.length;
+      this.selectedIndex =
+        (this.selectedIndex - 1 + items.length) % items.length;
       this._highlightSelectedItem(items);
     } else if (e.key === "Enter") {
       e.preventDefault();
@@ -200,7 +204,10 @@ class SearchComponent extends HTMLElement {
         `;
         a.addEventListener("mousedown", (e) => {
           e.preventDefault();
-          console.log("Dispatching item-selected event for:", result.description);
+          console.log(
+            "Dispatching item-selected event for:",
+            result.description,
+          );
           this.dispatchEvent(
             new CustomEvent("item-selected", { detail: result }),
           );
@@ -253,8 +260,13 @@ class ListComponent extends HTMLElement {
                 tfoot td {
                     border-top: 2px solid #333;
                 }
+
                 button.remove-btn {
                     background-color: #dc3545;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 4px 14px;                 
                 }
                 button.remove-btn:hover {
                     background-color: #c82333;
@@ -262,6 +274,10 @@ class ListComponent extends HTMLElement {
                 button.view-btn {
                     background-color: #007bff;
                     margin-right: 5px;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    padding: 4px 14px;
                 }
                 button.view-btn:hover {
                     background-color: #0056b3;
@@ -319,13 +335,19 @@ class ListComponent extends HTMLElement {
             <td>${fat}</td>
             <td>${carbs}</td>
             <td>
-                <button class="view-btn">View</button>
+                <button class="view-btn">Data</button>
                 <button class="remove-btn">Remove</button>
             </td>
         `;
 
     row.querySelector(".view-btn").addEventListener("click", () => {
-      this.dispatchEvent(new CustomEvent('view-item-details', { detail: item, bubbles: true, composed: true }));
+      this.dispatchEvent(
+        new CustomEvent("view-item-details", {
+          detail: item,
+          bubbles: true,
+          composed: true,
+        }),
+      );
     });
 
     row.querySelector(".remove-btn").addEventListener("click", () => {
@@ -385,10 +407,10 @@ class ListComponent extends HTMLElement {
 }
 
 class ItemModal extends HTMLElement {
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open' });
-        this.shadowRoot.innerHTML = `
+  constructor() {
+    super();
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot.innerHTML = `
             <style>
                 .modal-overlay {
                     position: fixed;
@@ -450,36 +472,55 @@ class ItemModal extends HTMLElement {
                 </div>
             </div>
         `;
-        this._item = null;
-    }
+    this._item = null;
+  }
 
-    connectedCallback() {
-        this.shadowRoot.querySelector('.modal-close').addEventListener('click', this._closeModal.bind(this));
-        this.shadowRoot.querySelector('.modal-overlay').addEventListener('click', this._handleOverlayClick.bind(this));
-        this.shadowRoot.querySelector('.modal-content').addEventListener('click', (e) => e.stopPropagation()); // Prevent content clicks from closing modal
-    }
+  connectedCallback() {
+    this.shadowRoot
+      .querySelector(".modal-close")
+      .addEventListener("click", this._closeModal.bind(this));
+    this.shadowRoot
+      .querySelector(".modal-overlay")
+      .addEventListener("click", this._handleOverlayClick.bind(this));
+    this.shadowRoot
+      .querySelector(".modal-content")
+      .addEventListener("click", (e) => e.stopPropagation()); // Prevent content clicks from closing modal
+  }
 
-    disconnectedCallback() {
-        this.shadowRoot.querySelector('.modal-close').removeEventListener('click', this._closeModal.bind(this));
-        this.shadowRoot.querySelector('.modal-overlay').removeEventListener('click', this._handleOverlayClick.bind(this));
-        this.shadowRoot.querySelector('.modal-content').removeEventListener('click', (e) => e.stopPropagation());
-    }
+  disconnectedCallback() {
+    this.shadowRoot
+      .querySelector(".modal-close")
+      .removeEventListener("click", this._closeModal.bind(this));
+    this.shadowRoot
+      .querySelector(".modal-overlay")
+      .removeEventListener("click", this._handleOverlayClick.bind(this));
+    this.shadowRoot
+      .querySelector(".modal-content")
+      .removeEventListener("click", (e) => e.stopPropagation());
+  }
 
-    set item(data) {
-        this._item = data;
-        if (this._item) {
-            this.shadowRoot.getElementById('item-data').textContent = JSON.stringify(this._item, null, 2);
-            this.shadowRoot.querySelector('h3').textContent = `Details for ${this._item.description || 'Item'}`;
-        }
+  set item(data) {
+    this._item = data;
+    if (this._item) {
+      this.shadowRoot.getElementById("item-data").textContent = JSON.stringify(
+        this._item,
+        null,
+        2,
+      );
+      this.shadowRoot.querySelector("h3").textContent =
+        `Details for ${this._item.description || "Item"}`;
     }
+  }
 
-    _closeModal() {
-        this.dispatchEvent(new CustomEvent('close-modal', { bubbles: true, composed: true }));
-    }
+  _closeModal() {
+    this.dispatchEvent(
+      new CustomEvent("close-modal", { bubbles: true, composed: true }),
+    );
+  }
 
-    _handleOverlayClick() {
-        this._closeModal();
-    }
+  _handleOverlayClick() {
+    this._closeModal();
+  }
 }
 
 // Define custom elements
@@ -491,50 +532,53 @@ customElements.define("item-modal", ItemModal); // Define the new modal componen
 const searchComponent = document.querySelector("search-component");
 const listComponent = document.querySelector("list-component");
 
-const apiKeyInput = document.getElementById('api-key-input');
-const saveApiKeyButton = document.getElementById('save-api-key');
-const apiKeyStatus = document.querySelector('.api-key-status');
+const apiKeyInput = document.getElementById("api-key-input");
+const saveApiKeyButton = document.getElementById("save-api-key");
+const apiKeyStatus = document.querySelector(".api-key-status");
 
-const LOCAL_STORAGE_API_KEY = 'usda_api_key';
+const LOCAL_STORAGE_API_KEY = "usda_api_key";
 
 // Load API key from local storage on startup
 let storedApiKey = localStorage.getItem(LOCAL_STORAGE_API_KEY);
 if (storedApiKey) {
-    searchComponent.apiKey = storedApiKey;
-    apiKeyInput.value = storedApiKey;
-    apiKeyStatus.textContent = 'API Key loaded from local storage.';
-    apiKeyStatus.style.color = '#28a745'; // Green for success
+  searchComponent.apiKey = storedApiKey;
+  apiKeyInput.value = storedApiKey;
+  apiKeyStatus.textContent = "API Key loaded from local storage.";
+  apiKeyStatus.style.color = "#28a745"; // Green for success
 } else {
-    apiKeyStatus.textContent = 'No API Key found. Please enter and save your key.';
-    apiKeyStatus.style.color = '#dc3545'; // Red for warning
+  apiKeyStatus.textContent =
+    "No API Key found. Please enter and save your key.";
+  apiKeyStatus.style.color = "#dc3545"; // Red for warning
 }
 
 // Save API key to local storage when button is clicked
-saveApiKeyButton.addEventListener('click', () => {
-    const newKey = apiKeyInput.value.trim();
-    if (newKey) {
-        localStorage.setItem(LOCAL_STORAGE_API_KEY, newKey);
-        searchComponent.apiKey = newKey;
-        apiKeyStatus.textContent = 'API Key saved successfully!';
-        apiKeyStatus.style.color = '#28a745'; // Green
-    } else {
-        apiKeyStatus.textContent = 'API Key cannot be empty.';
-        apiKeyStatus.style.color = '#dc3545'; // Red
-    }
+saveApiKeyButton.addEventListener("click", () => {
+  const newKey = apiKeyInput.value.trim();
+  if (newKey) {
+    localStorage.setItem(LOCAL_STORAGE_API_KEY, newKey);
+    searchComponent.apiKey = newKey;
+    apiKeyStatus.textContent = "API Key saved successfully!";
+    apiKeyStatus.style.color = "#28a745"; // Green
+  } else {
+    apiKeyStatus.textContent = "API Key cannot be empty.";
+    apiKeyStatus.style.color = "#dc3545"; // Red
+  }
 });
 
-
 searchComponent.addEventListener("item-selected", (e) => {
-  console.log("item-selected event received in main.js for:", e.detail.description);
+  console.log(
+    "item-selected event received in main.js for:",
+    e.detail.description,
+  );
   listComponent.addItem(e.detail);
 });
 
 listComponent.addEventListener("view-item-details", (e) => {
-    const modal = document.createElement('item-modal');
-    modal.item = e.detail;
-    document.body.appendChild(modal);
+  const modal = document.createElement("item-modal");
+  modal.item = e.detail;
+  document.body.appendChild(modal);
 
-    modal.addEventListener('close-modal', () => {
-        document.body.removeChild(modal);
-    });
+  modal.addEventListener("close-modal", () => {
+    document.body.removeChild(modal);
+  });
 });
