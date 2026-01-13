@@ -249,18 +249,18 @@ class ListComponent extends HTMLElement {
                 tfoot td {
                     border-top: 2px solid #333;
                 }
-                button {
-                    cursor: pointer;
-                    border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 4px;
+                button.remove-btn {
                     background-color: #dc3545;
-                    color: white;
-                    font-weight: bold;
-                    transition: background-color 0.2s;
                 }
-                button:hover {
+                button.remove-btn:hover {
                     background-color: #c82333;
+                }
+                button.view-btn {
+                    background-color: #007bff;
+                    margin-right: 5px;
+                }
+                button.view-btn:hover {
+                    background-color: #0056b3;
                 }
             </style>
             <table>
@@ -313,10 +313,17 @@ class ListComponent extends HTMLElement {
             <td>${protein}</td>
             <td>${fat}</td>
             <td>${carbs}</td>
-            <td><button>Remove</button></td>
+            <td>
+                <button class="view-btn">View</button>
+                <button class="remove-btn">Remove</button>
+            </td>
         `;
 
-    row.querySelector("button").addEventListener("click", () => {
+    row.querySelector(".view-btn").addEventListener("click", () => {
+      this.dispatchEvent(new CustomEvent('view-item-details', { detail: item, bubbles: true, composed: true }));
+    });
+
+    row.querySelector(".remove-btn").addEventListener("click", () => {
       this.removeItem(item.fdcId);
     });
 
@@ -372,9 +379,108 @@ class ListComponent extends HTMLElement {
   }
 }
 
+class ItemModal extends HTMLElement {
+    constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        this.shadowRoot.innerHTML = `
+            <style>
+                .modal-overlay {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.6);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                }
+                .modal-content {
+                    background-color: #fff;
+                    padding: 25px;
+                    border-radius: 8px;
+                    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                    position: relative;
+                    width: 90%;
+                    max-width: 600px;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    color: #333;
+                }
+                .modal-close {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                    background: none;
+                    border: none;
+                    padding: 5px;
+                    line-height: 1;
+                }
+                .modal-close:hover {
+                    color: #dc3545;
+                }
+                pre {
+                    background-color: #f8f8f8;
+                    border: 1px solid #ddd;
+                    padding: 10px;
+                    border-radius: 4px;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    font-size: 0.9em;
+                }
+                h3 {
+                    margin-top: 0;
+                    color: #007bff;
+                }
+            </style>
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <button class="modal-close">&times;</button>
+                    <h3>Item Details</h3>
+                    <pre id="item-data"></pre>
+                </div>
+            </div>
+        `;
+        this._item = null;
+    }
+
+    connectedCallback() {
+        this.shadowRoot.querySelector('.modal-close').addEventListener('click', this._closeModal.bind(this));
+        this.shadowRoot.querySelector('.modal-overlay').addEventListener('click', this._handleOverlayClick.bind(this));
+        this.shadowRoot.querySelector('.modal-content').addEventListener('click', (e) => e.stopPropagation()); // Prevent content clicks from closing modal
+    }
+
+    disconnectedCallback() {
+        this.shadowRoot.querySelector('.modal-close').removeEventListener('click', this._closeModal.bind(this));
+        this.shadowRoot.querySelector('.modal-overlay').removeEventListener('click', this._handleOverlayClick.bind(this));
+        this.shadowRoot.querySelector('.modal-content').removeEventListener('click', (e) => e.stopPropagation());
+    }
+
+    set item(data) {
+        this._item = data;
+        if (this._item) {
+            this.shadowRoot.getElementById('item-data').textContent = JSON.stringify(this._item, null, 2);
+            this.shadowRoot.querySelector('h3').textContent = `Details for ${this._item.description || 'Item'}`;
+        }
+    }
+
+    _closeModal() {
+        this.dispatchEvent(new CustomEvent('close-modal', { bubbles: true, composed: true }));
+    }
+
+    _handleOverlayClick() {
+        this._closeModal();
+    }
+}
+
 // Define custom elements
 customElements.define("search-component", SearchComponent);
 customElements.define("list-component", ListComponent);
+customElements.define("item-modal", ItemModal); // Define the new modal component
 
 // Main script logic
 const searchComponent = document.querySelector("search-component");
@@ -415,4 +521,14 @@ saveApiKeyButton.addEventListener('click', () => {
 
 searchComponent.addEventListener("item-selected", (e) => {
   listComponent.addItem(e.detail);
+});
+
+listComponent.addEventListener("view-item-details", (e) => {
+    const modal = document.createElement('item-modal');
+    modal.item = e.detail;
+    document.body.appendChild(modal);
+
+    modal.addEventListener('close-modal', () => {
+        document.body.removeChild(modal);
+    });
 });
