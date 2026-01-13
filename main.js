@@ -138,8 +138,8 @@ class SearchComponent extends HTMLElement {
         a.innerHTML = `
           ${result.description}
           <span class="details">
-            ${result.brandOwner ? `Brand: ${result.brandOwner}` : ''}
-            ${result.foodCategory ? `Category: ${result.foodCategory}` : ''}
+            ${result.brandOwner ? `Brand: ${result.brandOwner}` : ""}
+            ${result.foodCategory ? `Category: ${result.foodCategory}` : ""}
           </span>
         `;
         a.addEventListener("click", (e) => {
@@ -328,7 +328,7 @@ const listComponent = document.querySelector("list-component");
 
 // IMPORTANT: Replace with your actual USDA API key.
 // You can get a key from https://fdc.nal.usda.gov/api-key-signup.html
-searchComponent.apiKey = "WPGQ6fCR1DHzPcNsgjFaK7c8KR6SIb1ZYyNsEXmR";
+searchComponent.apiKey = "YOUR_API_KEY";
 
 if (searchComponent.apiKey === "YOUR_API_KEY") {
   alert(
