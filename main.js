@@ -130,9 +130,9 @@ class SearchComponent extends HTMLElement {
 
   onBlur() {
     // Delay hiding to allow click events on dropdown items to register
-    // setTimeout(() => {
-    //   this.dropdownContent.style.display = "none";
-    // }, 100);
+    setTimeout(() => {
+      this.dropdownContent.style.display = "none";
+    }, 100);
   }
 
   _calculateDropdownHeight() {
@@ -198,7 +198,7 @@ class SearchComponent extends HTMLElement {
             ${result.foodCategory ? `Category: ${result.foodCategory}` : ""}
           </span>
         `;
-        a.addEventListener("click", (e) => {
+        a.addEventListener("mousedown", (e) => {
           e.preventDefault();
           console.log("Dispatching item-selected event for:", result.description);
           this.dispatchEvent(
