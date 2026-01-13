@@ -63,25 +63,66 @@ class SearchComponent extends HTMLElement {
     this.cache = {};
     this.debounceTimeout = null;
     this.apiKey = "";
+    this.selectedIndex = -1; // Initialize selected index for keyboard navigation
   }
 
   connectedCallback() {
     this.input = this.shadowRoot.querySelector("input");
     this.dropdownContent = this.shadowRoot.querySelector(".dropdown-content");
     this.input.addEventListener("keyup", this.onKeyUp.bind(this));
+    this.input.addEventListener("keydown", this.onKeyDown.bind(this)); // Add keydown listener
     this.input.addEventListener("focus", this.onFocus.bind(this));
     this.input.addEventListener("blur", this.onBlur.bind(this));
+    window.addEventListener("resize", this._calculateDropdownHeight.bind(this));
+    this._calculateDropdownHeight(); // Initial calculation
   }
 
   disconnectedCallback() {
     this.input.removeEventListener("keyup", this.onKeyUp.bind(this));
+    this.input.removeEventListener("keydown", this.onKeyDown.bind(this)); // Remove keydown listener
     this.input.removeEventListener("focus", this.onFocus.bind(this));
     this.input.removeEventListener("blur", this.onBlur.bind(this));
+    window.removeEventListener("resize", this._calculateDropdownHeight.bind(this));
+  }
+
+  onKeyDown(e) {
+    const items = Array.from(this.dropdownContent.children);
+    if (items.length === 0) return;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.selectedIndex = (this.selectedIndex + 1) % items.length;
+      this._highlightSelectedItem(items);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.selectedIndex = (this.selectedIndex - 1 + items.length) % items.length;
+      this._highlightSelectedItem(items);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (this.selectedIndex !== -1) {
+        items[this.selectedIndex].click();
+      }
+    } else if (e.key === "Escape") {
+      this.dropdownContent.style.display = "none";
+      this.selectedIndex = -1;
+    }
+  }
+
+  _highlightSelectedItem(items) {
+    items.forEach((item, index) => {
+      if (index === this.selectedIndex) {
+        item.style.backgroundColor = "#e9ecef"; // Highlight color
+        item.scrollIntoView({ block: "nearest" });
+      } else {
+        item.style.backgroundColor = "";
+      }
+    });
   }
 
   onFocus() {
     if (this.dropdownContent.children.length > 0) {
       this.dropdownContent.style.display = "block";
+      this._calculateDropdownHeight(); // Recalculate on focus/open
     }
   }
 
@@ -92,7 +133,16 @@ class SearchComponent extends HTMLElement {
     }, 100);
   }
 
+  _calculateDropdownHeight() {
+    // Calculate available space from the bottom of the input to the bottom of the viewport
+    const inputRect = this.input.getBoundingClientRect();
+    const availableHeight = window.innerHeight - inputRect.bottom - 20; // 20px margin from bottom
+
+    this.dropdownContent.style.maxHeight = `${availableHeight}px`;
+  }
+
   onKeyUp(e) {
+    this.selectedIndex = -1; // Reset selected index on new input
     clearTimeout(this.debounceTimeout);
     this.debounceTimeout = setTimeout(() => {
       this.search(this.input.value);
@@ -130,8 +180,11 @@ class SearchComponent extends HTMLElement {
 
   renderResults(results) {
     this.dropdownContent.innerHTML = "";
+    this.selectedIndex = -1; // Reset selected index on new results
+
     if (results && results.length) {
       this.dropdownContent.style.display = "block";
+      this._calculateDropdownHeight(); // Recalculate height when content changes
       results.forEach((result) => {
         const a = document.createElement("a");
         a.href = "#";
@@ -154,6 +207,7 @@ class SearchComponent extends HTMLElement {
       });
     } else {
       this.dropdownContent.style.display = "none";
+      this.selectedIndex = -1; // Reset if no results or hidden
     }
   }
 }
@@ -326,15 +380,38 @@ customElements.define("list-component", ListComponent);
 const searchComponent = document.querySelector("search-component");
 const listComponent = document.querySelector("list-component");
 
-// IMPORTANT: Replace with your actual USDA API key.
-// You can get a key from https://fdc.nal.usda.gov/api-key-signup.html
-searchComponent.apiKey = "YOUR_API_KEY";
+const apiKeyInput = document.getElementById('api-key-input');
+const saveApiKeyButton = document.getElementById('save-api-key');
+const apiKeyStatus = document.querySelector('.api-key-status');
 
-if (searchComponent.apiKey === "YOUR_API_KEY") {
-  alert(
-    'Please replace "YOUR_API_KEY" with your actual USDA API key in main.js',
-  );
+const LOCAL_STORAGE_API_KEY = 'usda_api_key';
+
+// Load API key from local storage on startup
+let storedApiKey = localStorage.getItem(LOCAL_STORAGE_API_KEY);
+if (storedApiKey) {
+    searchComponent.apiKey = storedApiKey;
+    apiKeyInput.value = storedApiKey;
+    apiKeyStatus.textContent = 'API Key loaded from local storage.';
+    apiKeyStatus.style.color = '#28a745'; // Green for success
+} else {
+    apiKeyStatus.textContent = 'No API Key found. Please enter and save your key.';
+    apiKeyStatus.style.color = '#dc3545'; // Red for warning
 }
+
+// Save API key to local storage when button is clicked
+saveApiKeyButton.addEventListener('click', () => {
+    const newKey = apiKeyInput.value.trim();
+    if (newKey) {
+        localStorage.setItem(LOCAL_STORAGE_API_KEY, newKey);
+        searchComponent.apiKey = newKey;
+        apiKeyStatus.textContent = 'API Key saved successfully!';
+        apiKeyStatus.style.color = '#28a745'; // Green
+    } else {
+        apiKeyStatus.textContent = 'API Key cannot be empty.';
+        apiKeyStatus.style.color = '#dc3545'; // Red
+    }
+});
+
 
 searchComponent.addEventListener("item-selected", (e) => {
   listComponent.addItem(e.detail);
