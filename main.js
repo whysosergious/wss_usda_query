@@ -396,10 +396,47 @@ class ListComponent extends HTMLElement {
                         font-size: 0.85em; /* Adjusted button font size */
                         width: auto; /* Allow buttons to size naturally */
                     }
-                    button.view-btn {
-                        margin-right: 0; /* Remove margin as gap handles spacing */
-                    }
-                }
+                                    button.view-btn {
+                                        margin-right: 0; /* Remove margin as gap handles spacing */
+                                    }
+                    
+                                    .amount-input-group {
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 5px;
+                                        margin-top: 5px;
+                                        font-size: 0.9em;
+                                    }
+                    
+                                    .amount-input-group label {
+                                        font-weight: normal;
+                                        color: #555;
+                                    }
+                    
+                                    .amount-input-group input {
+                                        width: 60px; /* Adjust as needed */
+                                        padding: 3px 5px;
+                                        border: 1px solid #ccc;
+                                        border-radius: 3px;
+                                        font-size: 0.9em;
+                                    }
+                    
+                                    .amount-input-group span {
+                                        color: #555;
+                                    }
+                                    
+                                    /* Adjust description column for mobile to accommodate amount input */
+                                    @media (max-width: 600px) {
+                                        td:first-of-type {
+                                            height: auto; /* Allow height to adjust */
+                                            display: flex;
+                                            flex-direction: column;
+                                            align-items: flex-start;
+                                        }
+                                        .amount-input-group {
+                                            margin-left: 0;
+                                        }
+                                    }                }
             </style>
             <table>
                 <thead>
@@ -433,10 +470,29 @@ class ListComponent extends HTMLElement {
   }
 
   addItem(item) {
-    console.log("Adding item to list:", item.description);
-    this.items.push(item);
-    const energy =
-      item.foodNutrients.find((n) => n.nutrientId === 1008)?.value || 0;
+    const defaultServingSize = 100;
+    const defaultServingSizeUnit = "grm";
+
+    const itemServingSize = item.servingSize || defaultServingSize;
+    const itemServingSizeUnit = item.servingSizeUnit || defaultServingSizeUnit;
+
+    const itemWithAmount = {
+      ...item,
+      amount: itemServingSize,
+      servingSizeUnit: itemServingSizeUnit,
+      originalServingSize: itemServingSize,
+    };
+    this.items.push(itemWithAmount);
+
+    const getNutrientValue = (foodNutrients, nutrientIds) => {
+      for (const id of nutrientIds) {
+        const nutrient = foodNutrients.find((n) => n.nutrientId === id);
+        if (nutrient) return nutrient.value;
+      }
+      return 0;
+    };
+
+    const energy = getNutrientValue(item.foodNutrients, [1008, 2047, 2048]);
     const protein =
       item.foodNutrients.find((n) => n.nutrientId === 1003)?.value || 0;
     const fat =
@@ -446,8 +502,20 @@ class ListComponent extends HTMLElement {
 
     const row = document.createElement("tr");
     row.dataset.fdcid = item.fdcId;
+    row.dataset.originalServingSize = itemServingSize;
     row.innerHTML = `
-              <td>${item.description}</td>
+              <td>
+                <div>${item.description}</div>
+                <div class="amount-input-group">
+                  <label for="amount-${item.fdcId}">Amount:</label>
+                  <input type="number" 
+                         id="amount-${item.fdcId}" 
+                         class="item-amount-input"
+                         value="${itemServingSize}" 
+                         min="0.01" step="any">
+                  <span>${itemServingSizeUnit.toLowerCase()}</span>
+                </div>
+              </td>
               <td data-label="Kcal">${energy.toFixed(2)}</td>
               <td data-label="Protein">${protein.toFixed(2)}</td>
               <td data-label="Fat">${fat.toFixed(2)}</td>
@@ -457,6 +525,10 @@ class ListComponent extends HTMLElement {
                   <button class="remove-btn">Remove</button>
               </td>
           `;
+
+    row.querySelector(".item-amount-input").addEventListener("input", (e) => {
+      this.updateItemAmount(item.fdcId, parseFloat(e.target.value));
+    });
 
     row.querySelector(".view-btn").addEventListener("click", () => {
       this.dispatchEvent(
@@ -485,31 +557,82 @@ class ListComponent extends HTMLElement {
     this.updateSummary();
   }
 
+  updateItemAmount(fdcId, newAmount) {
+    let itemToUpdate = this.items.find((item) => item.fdcId === fdcId);
+    if (itemToUpdate) {
+      itemToUpdate.amount = newAmount;
+
+      const scalingFactor = newAmount / itemToUpdate.originalServingSize;
+
+      const getNutrientValue = (foodNutrients, nutrientIds) => {
+        for (const id of nutrientIds) {
+          const nutrient = foodNutrients.find((n) => n.nutrientId === id);
+          if (nutrient) return nutrient.value;
+        }
+        return 0;
+      };
+
+      const energy =
+        getNutrientValue(itemToUpdate.foodNutrients, [1008, 2047, 2048]) *
+        scalingFactor;
+      const protein =
+        (itemToUpdate.foodNutrients.find((n) => n.nutrientId === 1003)?.value ||
+          0) * scalingFactor;
+      const fat =
+        (itemToUpdate.foodNutrients.find((n) => n.nutrientId === 1004)?.value ||
+          0) * scalingFactor;
+      const carbs =
+        (itemToUpdate.foodNutrients.find((n) => n.nutrientId === 1005)?.value ||
+          0) * scalingFactor;
+
+      const row = this.tbody.querySelector(`tr[data-fdcid="${fdcId}"]`);
+      if (row) {
+        row.children[1].textContent = energy.toFixed(2); // Kcal
+        row.children[2].textContent = protein.toFixed(2); // Protein
+        row.children[3].textContent = fat.toFixed(2); // Fat
+        row.children[4].textContent = carbs.toFixed(2); // Carbs
+      }
+      this.updateSummary();
+    }
+  }
+
   updateSummary() {
-    const totalEnergy = this.items.reduce(
-      (acc, item) =>
-        acc +
-        (item.foodNutrients.find((n) => n.nutrientId === 1008)?.value || 0),
-      0,
-    );
-    const totalProtein = this.items.reduce(
-      (acc, item) =>
-        acc +
-        (item.foodNutrients.find((n) => n.nutrientId === 1003)?.value || 0),
-      0,
-    );
-    const totalFat = this.items.reduce(
-      (acc, item) =>
-        acc +
-        (item.foodNutrients.find((n) => n.nutrientId === 1004)?.value || 0),
-      0,
-    );
-    const totalCarbs = this.items.reduce(
-      (acc, item) =>
-        acc +
-        (item.foodNutrients.find((n) => n.nutrientId === 1005)?.value || 0),
-      0,
-    );
+    const getNutrientValue = (foodNutrients, nutrientIds) => {
+      for (const id of nutrientIds) {
+        const nutrient = foodNutrients.find((n) => n.nutrientId === id);
+        if (nutrient) return nutrient.value;
+      }
+      return 0;
+    };
+
+    const totalEnergy = this.items.reduce((acc, item) => {
+      const scalingFactor = item.amount / item.originalServingSize;
+      const energy =
+        getNutrientValue(item.foodNutrients, [1008, 2047, 2048]) *
+        scalingFactor;
+      return acc + energy;
+    }, 0);
+    const totalProtein = this.items.reduce((acc, item) => {
+      const scalingFactor = item.amount / item.originalServingSize;
+      const protein =
+        (item.foodNutrients.find((n) => n.nutrientId === 1003)?.value || 0) *
+        scalingFactor;
+      return acc + protein;
+    }, 0);
+    const totalFat = this.items.reduce((acc, item) => {
+      const scalingFactor = item.amount / item.originalServingSize;
+      const fat =
+        (item.foodNutrients.find((n) => n.nutrientId === 1004)?.value || 0) *
+        scalingFactor;
+      return acc + fat;
+    }, 0);
+    const totalCarbs = this.items.reduce((acc, item) => {
+      const scalingFactor = item.amount / item.originalServingSize;
+      const carbs =
+        (item.foodNutrients.find((n) => n.nutrientId === 1005)?.value || 0) *
+        scalingFactor;
+      return acc + carbs;
+    }, 0);
 
     this.tfoot.innerHTML = `
               <tr>
