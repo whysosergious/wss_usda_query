@@ -258,7 +258,6 @@ class ListComponent extends HTMLElement {
                     font-weight: bold;
                 }
                 tfoot td {
-                    border-top: 2px solid #333;
                 }
 
                 button.remove-btn {
@@ -266,7 +265,7 @@ class ListComponent extends HTMLElement {
                     color: white;
                     border: none;
                     border-radius: 5px;
-                    padding: 4px 14px;                 
+                    padding: 4px 14px;
                 }
                 button.remove-btn:hover {
                     background-color: #c82333;
@@ -281,6 +280,125 @@ class ListComponent extends HTMLElement {
                 }
                 button.view-btn:hover {
                     background-color: #0056b3;
+                }
+
+                /* Mobile-specific styles for card-like layout */
+                @media (max-width: 600px) {
+                    table {
+                        border: none;
+                        box-shadow: none;
+                    }
+                    thead {
+                        display: none; /* Hide table headers on mobile */
+                    }
+                    tbody, tr {
+                        display: block;
+                    }
+                    tr {
+                        margin-bottom: 15px;
+                        border: 1px solid #ddd;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        border-radius: 8px;
+                        padding: 10px; /* Reduced overall padding for card */
+                        background-color: #fff;
+                        position: relative; /* For button positioning */
+                    }
+                    td {
+                        display: block;
+                        text-align: right;
+                        border-bottom: 1px dashed #eee; /* Light dashed border between fields */
+                        padding: 5px 10px; /* Tighter padding for rows */
+                        position: relative;
+                        padding-left: 50%; /* Space for the label */
+                        font-size: 0.9em; /* Smaller font for data */
+                    }
+                    td:first-of-type { /* Description as heading */
+                        text-align: left;
+                        font-size: 1.1em; /* Slightly larger for heading */
+                        font-weight: bold;
+                        padding-left: 10px; /* No label, so no left padding needed */
+                        border-bottom: 1px solid #ddd; /* Clear separator for heading */
+                        margin-bottom: 5px;
+                    }
+                    td:first-of-type::before {
+                        content: none; /* Remove label for description */
+                    }
+                    td::before {
+                        content: attr(data-label); /* Use data-label for the field name */
+                        position: absolute;
+                        left: 10px;
+                        width: calc(50% - 20px); /* Adjust width to fit */
+                        text-align: left;
+                        font-weight: bold;
+                        color: #555;
+                        white-space: nowrap; /* Prevent label from wrapping */
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    td:last-of-type { /* Buttons container */
+                        border-bottom: none; /* No border for the last field */
+                        text-align: right; /* Align buttons to the right */
+                        padding-left: 10px; /* Reset padding */
+                        padding-top: 10px; /* Space above buttons */
+                        display: flex; /* Use flexbox for button alignment */
+                        justify-content: flex-end; /* Push to end */
+                        gap: 8px; /* Space between buttons */
+                    }
+                    tfoot {
+                        display: block;
+                        margin-top: 15px;
+                        border-top: none; /* Remove border from tfoot */
+                        padding: 0; /* Remove padding */
+                        background-color: transparent; /* Transparent background */
+                        box-shadow: none; /* Remove shadow */
+                    }
+                    tfoot tr {
+                        display: block;
+                        margin-bottom: 0;
+                        border: none;
+                        box-shadow: none;
+                        padding: 0;
+                    }
+                    tfoot td {
+                        display: block;
+                        text-align: right;
+                        border-bottom: none; /* No borders for sum info */
+                        padding: 3px 10px; /* Very tight padding for sum info */
+                        position: relative;
+                        padding-left: 40%; /* Adjust space for label */
+                        font-size: 0.9em; /* Smaller font for sum info */
+                        background-color: #f9f9f9; /* Light background for sum rows */
+                    }
+                    tfoot td:first-of-type {
+                        font-weight: bold;
+                        background-color: #e2e6ea; /* Slightly darker for 'Total' label */
+                        padding-top: 8px;
+                        padding-bottom: 8px;
+                    }
+                    tfoot td:last-of-type {
+                         border-bottom: none;
+                         padding-bottom: 8px;
+                    }
+                    tfoot td::before {
+                        content: attr(data-label);
+                        position: absolute;
+                        left: 10px;
+                        width: calc(40% - 20px); /* Adjust width for sum labels */
+                        text-align: left;
+                        font-weight: bold;
+                        color: #333;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    }
+                    button.remove-btn, button.view-btn {
+                        padding: 6px 12px; /* Adjusted button padding */
+                        font-size: 0.85em; /* Adjusted button font size */
+                        width: auto; /* Allow buttons to size naturally */
+                    }
+                    button.view-btn {
+                        margin-right: 0; /* Remove margin as gap handles spacing */
+                    }
                 }
             </style>
             <table>
@@ -329,16 +447,16 @@ class ListComponent extends HTMLElement {
     const row = document.createElement("tr");
     row.dataset.fdcid = item.fdcId;
     row.innerHTML = `
-            <td>${item.description}</td>
-            <td>${energy}</td>
-            <td>${protein}</td>
-            <td>${fat}</td>
-            <td>${carbs}</td>
-            <td>
-                <button class="view-btn">Data</button>
-                <button class="remove-btn">Remove</button>
-            </td>
-        `;
+              <td>${item.description}</td>
+              <td data-label="Kcal">${energy.toFixed(2)}</td>
+              <td data-label="Protein">${protein.toFixed(2)}</td>
+              <td data-label="Fat">${fat.toFixed(2)}</td>
+              <td data-label="Carbs">${carbs.toFixed(2)}</td>
+              <td data-label="">
+                  <button class="view-btn">Data</button>
+                  <button class="remove-btn">Remove</button>
+              </td>
+          `;
 
     row.querySelector(".view-btn").addEventListener("click", () => {
       this.dispatchEvent(
@@ -394,15 +512,15 @@ class ListComponent extends HTMLElement {
     );
 
     this.tfoot.innerHTML = `
-            <tr>
-                <td>Total</td>
-                <td>${totalEnergy.toFixed(2)}</td>
-                <td>${totalProtein.toFixed(2)}</td>
-                <td>${totalFat.toFixed(2)}</td>
-                <td>${totalCarbs.toFixed(2)}</td>
-                <td></td>
-            </tr>
-        `;
+              <tr>
+                  <td data-label="Total">Total</td>
+                  <td data-label="Kcal">${totalEnergy.toFixed(2)}</td>
+                  <td data-label="Protein">${totalProtein.toFixed(2)}</td>
+                  <td data-label="Fat">${totalFat.toFixed(2)}</td>
+                  <td data-label="Carbs">${totalCarbs.toFixed(2)}</td>
+                  <td data-label=""></td>
+              </tr>
+          `;
   }
 }
 
