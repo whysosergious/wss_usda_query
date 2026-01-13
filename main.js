@@ -1,3 +1,4 @@
+// testing
 // Contents of components/search-component.js
 class SearchComponent extends HTMLElement {
   constructor() {
